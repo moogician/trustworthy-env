@@ -68,12 +68,9 @@ TAXONOMY_PROMPT = """Analyze this benchmark code for the following vulnerability
 7. CODE_LOOPHOLE: Can the agent submit trivial code that delegates to the reference?
 8. EVAL_SCRIPT_BUG: Are there bugs in evaluation/scoring scripts?
 9. STATISTICAL_EXPLOIT: Can statistical properties of inputs be exploited?
-10. TIMING_EXPLOIT: Can timing measurements be manipulated?
-11. MEMORY_EXPLOIT: Can CUDA/memory allocation behavior be exploited?
-12. ENV_EXPLOIT: Can the agent manipulate the evaluation environment (monkey-patching, stack inspection)?
-13. DATA_CONTAMINATION: Is the benchmark likely in LLM training data?
-14. MISSING_DEPENDENCY: Are there missing packages/tools that make tasks unsolvable?
-15. SAFETY_CONCERN: Does the benchmark enable unsafe agent behavior?
+10. ENV_EXPLOIT: Can the agent manipulate the evaluation environment (monkey-patching, stack inspection)?
+11. MISSING_DEPENDENCY: Are there missing packages/tools that make tasks unsolvable?
+12. SAFETY_CONCERN: Does the benchmark enable unsafe agent behavior?
 
 For each vulnerability found, provide:
 - Class (from above)
