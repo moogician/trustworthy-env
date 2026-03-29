@@ -35,6 +35,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from catalog import Issue, VulnClass, Benchmark, ALL_ISSUES
 from llm_detector import LLMDetector, Finding, DetectionResult
 from formal_detector import FormalDetector, FormalFinding, FormalResult
+from audit_mvp import run_audit
 
 
 # ============================================================================
@@ -201,6 +202,39 @@ def cmd_scan(args):
             print(f"    {cls}: {count}")
 
 
+
+
+def cmd_audit(args):
+    """Run benchmark audit pipeline against a benchmark repo/problem directory."""
+    report = run_audit(
+        args.path,
+        benchmark_id=args.benchmark_id,
+        run_cmd=args.run_cmd or None,
+        timeout_s=args.timeout_s,
+    )
+
+    if args.out:
+        import json
+        from pathlib import Path
+        Path(args.out).write_text(json.dumps(report, indent=2))
+        print(f"Wrote audit report to {args.out}")
+
+    summary = report["summary"]
+    print(f"Risk band: {summary['risk_band']} (score={summary['risk_score']})")
+    print(f"Findings: {summary['finding_count']}")
+    print(f"Static verification checks: {summary['static_verification_count']}")
+    print(f"Runtime verification checks: {summary['runtime_verification_count']}")
+
+    for f in report["findings"]:
+        print(f"  [POLICY/{f['severity'].upper()}] {f['category']} :: {f['title']} ({f['entity']})")
+
+    for v in report.get("static_verification", []):
+        print(f"  [STATIC/{v['status'].upper()}] {v['title']} ({v['entity']})")
+
+    for v in report.get("runtime_verification", []):
+        print(f"  [RUNTIME/{v['status'].upper()}] {v['title']}")
+
+
 def cmd_test(args):
     """Run against built-in catalog (regression test)."""
     from runner import run_comparison
@@ -223,6 +257,8 @@ Examples:
   python detect.py scan eval.py --detector formal
   python detect.py test
   python detect.py catalog
+  python detect.py audit ./kernelbench-demo --benchmark-id kernelbench
+  python detect.py audit ./benchmark --run-cmd "python3 evaluator.py" --timeout-s 90
         """,
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -243,6 +279,15 @@ Examples:
     # catalog
     p_cat = subparsers.add_parser("catalog", help="Show built-in issue catalog summary")
     p_cat.set_defaults(func=cmd_catalog)
+
+    # audit
+    p_audit = subparsers.add_parser("audit", help="Run MVP benchmark audit pipeline")
+    p_audit.add_argument("path", help="Benchmark repository/problem path")
+    p_audit.add_argument("--benchmark-id", default="custom", help="Benchmark identifier")
+    p_audit.add_argument("--run-cmd", default="", help="Optional command to execute for runtime verification")
+    p_audit.add_argument("--timeout-s", type=int, default=120, help="Timeout in seconds for runtime verification command")
+    p_audit.add_argument("--out", default="", help="Optional path to write JSON report")
+    p_audit.set_defaults(func=cmd_audit)
 
     args = parser.parse_args()
     args.func(args)
